@@ -101,11 +101,11 @@ export default class Component extends React.Component {
         return;
       } else if (this.prepRelease) {
         window.removeEventListener("resize", this.prepRelease);
-        if (checkSpan) {
+        if (checkSpan && checkSpan.parentNode) {
           checkSpan.parentNode.removeChild(checkSpan);
         }
       }
-      if (props.hasOwnProperty("disabled")) {
+      if (props.disabled) {
         const txtToEllipse =
           getTextNode(node);
         const value =
