@@ -3,6 +3,10 @@ import * as React from "react";
 const dataOriginalKey =
   "data-original";
 
+const getTextNode = node => {
+  return node.querySelector(".ellipse-me") || node.childNodes[0];
+};
+
 // read once
 const prepEllipse = node => {
   const child =
@@ -10,7 +14,7 @@ const prepEllipse = node => {
   const txtToEllipse =
     node.querySelector(".ellipse-me") || child;
 
-  if (child === null || txtToEllipse === null) {
+  if (txtToEllipse === null) {
     return {};
   }
 
@@ -100,6 +104,17 @@ export default class Component extends React.Component {
         if (checkSpan) {
           checkSpan.parentNode.removeChild(checkSpan);
         }
+      }
+      if (props.hasOwnProperty("disabled")) {
+        const txtToEllipse =
+          getTextNode(node);
+        const value =
+          txtToEllipse.getAttribute(dataOriginalKey);
+
+        if (value !== null) {
+          setText(txtToEllipse, value);
+        }
+        return;
       }
       this.prepRelease = () => ellipse(
         this.childRefs.checkSpan,
