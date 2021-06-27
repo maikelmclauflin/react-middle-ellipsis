@@ -1,72 +1,129 @@
-import React, { useCallback } from "react";
+import * as React from "react";
 
-const Component = props => {
-  const prepEllipse = node => {
-      const parent = node.parentNode;
-      const child =
-        parent.querySelector(".constrainedChild") /* Legacy. */ ||
-        node.childNodes[0];
-      const txtToEllipse =
-        parent.querySelector(".ellipseMe") ||
-        parent.querySelector(".constrainedEllipse") /* Legacy. */ ||
-        child;
+const dataOriginalKey =
+  "data-original";
 
-      if (child !== null && txtToEllipse !== null) {
-        // (Re)-set text back to data-original-text if it exists.
-        if (txtToEllipse.hasAttribute("data-original")) {
-          txtToEllipse.textContent = txtToEllipse.getAttribute("data-original");
-        }
+// read once
+const prepEllipse = node => {
+  const child =
+    node.childNodes[0];
+  const txtToEllipse =
+    node.querySelector(".ellipse-me") || child;
 
-        ellipse(
-          // Use the smaller width.
-          node.offsetWidth > parent.offsetWidth ? parent : node,
-          child,
-          txtToEllipse
-        );
-      }
-    },
-    measuredParent = useCallback(node => {
-      if (node !== null) {
-        window.addEventListener("resize", () => {
-          prepEllipse(node);
-        });
-        prepEllipse(node);
-      }
-    });
+  if (child === null || txtToEllipse === null) {
+    return {};
+  }
 
-  return (
-    <div
-      ref={measuredParent}
-      style={{
-        wordBreak: "keep-all",
-        overflowWrap: "normal",
-        ...(props.width && { width: props.width })
-      }}
-    >
-      {props.children}
-    </div>
-  );
+  const attr =
+    txtToEllipse.getAttribute(dataOriginalKey);
+
+  if (attr === null) {
+    txtToEllipse.setAttribute(dataOriginalKey, getText(txtToEllipse));
+  }
+
+  const checkSpan =
+    document.createElement("span");
+
+  // insert at end
+  checkSpan.style.fontSize = getComputedStyle(txtToEllipse).fontSize;
+  checkSpan.style.position = "absolute";
+  checkSpan.style.visibility = "hidden";
+  checkSpan.style.pointerEvents = "none";
+  checkSpan.textContent = getText(txtToEllipse);
+
+  node.insertBefore(checkSpan, null);
+
+  return {
+    checkSpan,
+    txtToEllipse
+  };
 };
 
-const ellipse = (parentNode, childNode, txtNode) => {
-  const childWidth = childNode.offsetWidth;
-  const containerWidth = parentNode.offsetWidth;
-  const txtWidth = txtNode.offsetWidth;
-  const targetWidth = childWidth > txtWidth ? childWidth : txtWidth;
+const ellipse = (checkSpan, txtToEllipse) => {
+  checkSpan.style.fontSize = getComputedStyle(txtToEllipse).fontSize;
 
-  if (targetWidth > containerWidth) {
-    const str = txtNode.textContent;
+  const fullWidth = checkSpan.offsetWidth;
+  const constrainedWidth = txtToEllipse.offsetWidth;
+  const str = txtToEllipse.getAttribute(dataOriginalKey);
+
+  if (fullWidth > constrainedWidth) {
     const txtChars = str.length;
-    const avgLetterSize = txtWidth / txtChars;
-    const canFit = (containerWidth - (targetWidth - txtWidth)) / avgLetterSize;
-    const delEachSide = (txtChars - canFit + 5) / 2;
+    const avgLetterSize = (fullWidth / txtChars) * 1.1;
+    const canFit = constrainedWidth / avgLetterSize;
+    const delEachSide = (txtChars - canFit) / 2;
     const endLeft = Math.floor(txtChars / 2 - delEachSide);
     const startRight = Math.ceil(txtChars / 2 + delEachSide);
 
-    txtNode.setAttribute("data-original", txtNode.textContent);
-    txtNode.textContent =
-      str.substr(0, endLeft) + "..." + str.substr(startRight);
+    setText(txtToEllipse, str.substr(0, endLeft) + "..." + str.substr(startRight));
+  } else {
+    // set back to original
+    setText(txtToEllipse, str);
   }
 };
 
-export default Component;
+const setText = (node, value) => {
+  switch (node.tagName.toLowerCase()) {
+    case "input":
+      node.value = value;
+      break;
+    default:
+      node.textContent = value;
+  }
+};
+
+const getText = node => {
+  switch (node.tagName.toLowerCase()) {
+    case "input":
+      return node.value;
+    default:
+      return node.textContent;
+  }
+};
+
+export default class Component extends React.Component {
+  constructor(props) {
+    super(props);
+    this.ref = null;
+    this.prepRelease = null;
+    this.childRefs = {};
+  }
+  render() {
+    const { props } = this;
+    const measuredParent = node => {
+      const { checkSpan } =
+        this.childRefs;
+
+      if (node === null) {
+        return;
+      } else if (this.prepRelease) {
+        window.removeEventListener("resize", this.prepRelease);
+        if (checkSpan) {
+          checkSpan.parentNode.removeChild(checkSpan);
+        }
+      }
+      this.prepRelease = () => ellipse(
+        this.childRefs.checkSpan,
+        this.childRefs.txtToEllipse
+      );
+      this.ref = node;
+      this.childRefs = prepEllipse(node);
+      window.addEventListener("resize", this.prepRelease);
+      this.prepRelease();
+    };
+
+    return (
+      <div
+        ref={measuredParent}
+        style={{
+          wordBreak: "keep-all",
+          overflowWrap: "normal",
+          overflow: "hidden",
+          position: "relative",
+          ...(props.width && { width: props.width })
+        }}
+      >
+        {props.children}
+      </div>
+    );
+  }
+}
