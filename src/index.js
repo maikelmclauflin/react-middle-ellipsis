@@ -1,130 +1,130 @@
-import * as React from "react";
+import * as React from "react"
 
 const dataOriginalKey =
-  "data-original";
+  "data-original"
 
 const getTextNode = node => {
-  return node.querySelector(".ellipse-me") || node.childNodes[0];
-};
+  return node.querySelector(".ellipse-me") || node.childNodes[0]
+}
 
 // read once
 const prepEllipse = node => {
   const child =
-    node.childNodes[0];
+    node.childNodes[0]
   const txtToEllipse =
-    node.querySelector(".ellipse-me") || child;
+    node.querySelector(".ellipse-me") || child
 
   if (txtToEllipse === null) {
-    return {};
+    return {}
   }
 
   const attr =
-    txtToEllipse.getAttribute(dataOriginalKey);
+    txtToEllipse.getAttribute(dataOriginalKey)
 
   if (attr === null) {
-    txtToEllipse.setAttribute(dataOriginalKey, getText(txtToEllipse));
+    txtToEllipse.setAttribute(dataOriginalKey, getText(txtToEllipse))
   }
 
   const checkSpan =
-    document.createElement("span");
+    document.createElement("span")
 
   // insert at end
-  checkSpan.style.fontSize = getComputedStyle(txtToEllipse).fontSize;
-  checkSpan.style.position = "absolute";
-  checkSpan.style.visibility = "hidden";
-  checkSpan.style.pointerEvents = "none";
-  checkSpan.textContent = getText(txtToEllipse);
+  checkSpan.style.fontSize = getComputedStyle(txtToEllipse).fontSize
+  checkSpan.style.position = "absolute"
+  checkSpan.style.visibility = "hidden"
+  checkSpan.style.pointerEvents = "none"
+  checkSpan.textContent = getText(txtToEllipse)
 
-  node.insertBefore(checkSpan, null);
+  node.insertBefore(checkSpan, null)
 
   return {
     checkSpan,
     txtToEllipse
-  };
-};
+  }
+}
 
 const ellipse = (checkSpan, txtToEllipse) => {
-  checkSpan.style.fontSize = getComputedStyle(txtToEllipse).fontSize;
+  checkSpan.style.fontSize = getComputedStyle(txtToEllipse).fontSize
 
-  const fullWidth = checkSpan.offsetWidth;
-  const constrainedWidth = txtToEllipse.offsetWidth;
-  const str = txtToEllipse.getAttribute(dataOriginalKey);
+  const fullWidth = checkSpan.offsetWidth
+  const constrainedWidth = txtToEllipse.offsetWidth
+  const str = txtToEllipse.getAttribute(dataOriginalKey)
 
   if (fullWidth > constrainedWidth) {
-    const txtChars = str.length;
-    const avgLetterSize = (fullWidth / txtChars) * 1.1;
-    const canFit = constrainedWidth / avgLetterSize;
-    const delEachSide = (txtChars - canFit) / 2;
-    const endLeft = Math.floor(txtChars / 2 - delEachSide);
-    const startRight = Math.ceil(txtChars / 2 + delEachSide);
+    const txtChars = str.length
+    const avgLetterSize = (fullWidth / txtChars) * 1.1
+    const canFit = constrainedWidth / avgLetterSize
+    const delEachSide = (txtChars - canFit) / 2
+    const endLeft = Math.floor(txtChars / 2 - delEachSide)
+    const startRight = Math.ceil(txtChars / 2 + delEachSide)
 
-    setText(txtToEllipse, str.substr(0, endLeft) + "..." + str.substr(startRight));
+    setText(txtToEllipse, str.substr(0, endLeft) + "..." + str.substr(startRight))
   } else {
     // set back to original
-    setText(txtToEllipse, str);
+    setText(txtToEllipse, str)
   }
-};
+}
 
 const setText = (node, value) => {
   switch (node.tagName.toLowerCase()) {
     case "input":
-      node.value = value;
-      break;
+      node.value = value
+      break
     default:
-      node.textContent = value;
+      node.textContent = value
   }
-};
+}
 
 const getText = node => {
   switch (node.tagName.toLowerCase()) {
     case "input":
-      return node.value;
+      return node.value
     default:
-      return node.textContent;
+      return node.textContent
   }
-};
+}
 
 export default class Component extends React.Component {
   constructor(props) {
-    super(props);
-    this.ref = null;
-    this.prepRelease = null;
-    this.childRefs = {};
+    super(props)
+    this.ref = null
+    this.prepRelease = null
+    this.childRefs = {}
   }
   render() {
-    const { props } = this;
+    const { props } = this
     const measuredParent = node => {
       const { checkSpan } =
-        this.childRefs;
+        this.childRefs
 
       if (node === null) {
-        return;
+        return
       } else if (this.prepRelease) {
-        window.removeEventListener("resize", this.prepRelease);
+        window.removeEventListener("resize", this.prepRelease)
         if (checkSpan && checkSpan.parentNode) {
-          checkSpan.parentNode.removeChild(checkSpan);
+          checkSpan.parentNode.removeChild(checkSpan)
         }
       }
       if (props.disabled) {
         const txtToEllipse =
-          getTextNode(node);
+          getTextNode(node)
         const value =
-          txtToEllipse.getAttribute(dataOriginalKey);
+          txtToEllipse.getAttribute(dataOriginalKey)
 
         if (value !== null) {
-          setText(txtToEllipse, value);
+          setText(txtToEllipse, value)
         }
-        return;
+        return
       }
       this.prepRelease = () => ellipse(
         this.childRefs.checkSpan,
         this.childRefs.txtToEllipse
-      );
-      this.ref = node;
-      this.childRefs = prepEllipse(node);
-      window.addEventListener("resize", this.prepRelease);
-      this.prepRelease();
-    };
+      )
+      this.ref = node
+      this.childRefs = prepEllipse(node)
+      window.addEventListener("resize", this.prepRelease)
+      this.prepRelease()
+    }
 
     return (
       <div
@@ -139,6 +139,6 @@ export default class Component extends React.Component {
       >
         {props.children}
       </div>
-    );
+    )
   }
 }
